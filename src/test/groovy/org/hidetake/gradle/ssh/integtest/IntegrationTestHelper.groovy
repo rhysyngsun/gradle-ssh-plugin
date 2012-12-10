@@ -3,9 +3,12 @@ package org.hidetake.gradle.ssh.integtest
 import static org.hamcrest.CoreMatchers.*
 import static org.junit.Assert.*
 
+import java.security.PublicKey
+
 import org.apache.sshd.SshServer
 import org.apache.sshd.server.CommandFactory
 import org.apache.sshd.server.PasswordAuthenticator
+import org.apache.sshd.server.PublickeyAuthenticator
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider
 import org.apache.sshd.server.session.ServerSession
 import org.slf4j.Logger
@@ -30,6 +33,7 @@ class IntegrationTestHelper {
 	String hostkey = DEFAULT_HOSTKEY
 
 	boolean authenticatedByPassword = false
+	boolean authenticatedByPublickey = false
 	List<String> requestedCommands = []
 
 	IntegrationTestHelper() {
@@ -51,6 +55,20 @@ class IntegrationTestHelper {
 				authenticatedByPassword = true
 				true
 			}] as PasswordAuthenticator
+	}
+
+	/**
+	 * Enables public key authentication.
+	 * If credential did not match, it will cause an assertion failure.
+	 *
+	 * @param assertion closure(String username, PublicKey key, ServerSession s)
+	 */
+	void enablePublickeyAuthentication(Closure assertion) {
+		server.publickeyAuthenticator = [authenticate: { String username, PublicKey key, ServerSession s ->
+				assertion(username, key, s)
+				authenticatedByPassword = true
+				true
+			}] as PublickeyAuthenticator
 	}
 
 	/**
