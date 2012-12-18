@@ -1,12 +1,12 @@
 package org.hidetake.gradle.ssh.internal
 
+import net.schmizz.sshj.SSHClient
+import net.schmizz.sshj.connection.channel.direct.Session
+
 import org.gradle.api.logging.LogLevel
 import org.hidetake.gradle.ssh.api.SessionSpec
 import org.hidetake.gradle.ssh.api.SshService
 import org.hidetake.gradle.ssh.api.SshSpec
-
-import com.jcraft.jsch.JSch
-import com.jcraft.jsch.Session
 
 /**
  * Default implementation of {@link SshService}.
@@ -16,8 +16,6 @@ import com.jcraft.jsch.Session
  */
 @Singleton
 class DefaultSshService implements SshService {
-	protected Closure<JSch> jschFactory = { new JSch() }
-
 	@Override
 	void execute(SshSpec sshSpec) {
 		assert sshSpec.dryRun != null, 'default of dryRun should be set by convention'
@@ -35,20 +33,20 @@ class DefaultSshService implements SshService {
 	 * @param sshSpec
 	 */
 	void wetRun(SshSpec sshSpec) {
-		JSch jsch = jschFactory()
-		jsch.config.putAll(sshSpec.config)
+		def sshClient = new SSHClient()
+		sshClient.loadKnownHosts()
 
 		Map<SessionSpec, Session> sessions = [:]
 		try {
 			sshSpec.sessionSpecs.each { spec ->
-				def session = jsch.getSession(spec.remote.user, spec.remote.host, spec.remote.port)
+				sshClient.connect(spec.remote.host, spec.remote.port)
 				if (spec.remote.password) {
-					session.password = spec.remote.password
+					sshClient.authPassword(spec.remote.user, spec.remote.password)
 				}
 				if (spec.remote.identity) {
-					session.identityRepository.add(spec.remote.identity.bytes)
+					sshClient.authPublickey(spec.remote.user, spec.remote.identity.path)
 				}
-				session.connect()
+				def session = sshClient.startSession()
 				sessions.put(spec, session)
 			}
 
@@ -68,7 +66,7 @@ class DefaultSshService implements SshService {
 				channelsLifecycleManager.disconnect()
 			}
 		} finally {
-			sessions.each { spec, session -> session.disconnect() }
+			sessions.each { spec, session -> session.close() }
 		}
 	}
 
