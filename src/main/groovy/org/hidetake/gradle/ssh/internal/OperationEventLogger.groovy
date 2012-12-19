@@ -1,11 +1,11 @@
 package org.hidetake.gradle.ssh.internal
 
+import net.schmizz.sshj.connection.channel.Channel
+
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
 import org.hidetake.gradle.ssh.api.OperationEventListener
 import org.hidetake.gradle.ssh.api.SessionSpec
-
-import com.jcraft.jsch.Channel
 
 /**
  * Handler for logging operation events.

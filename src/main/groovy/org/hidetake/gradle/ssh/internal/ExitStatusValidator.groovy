@@ -1,9 +1,9 @@
 package org.hidetake.gradle.ssh.internal
 
+import net.schmizz.sshj.connection.channel.Channel
+
 import org.hidetake.gradle.ssh.api.OperationEventListener
 import org.hidetake.gradle.ssh.api.SessionSpec
-
-import com.jcraft.jsch.Channel
 
 /**
  * An event listener to validate exit status of the channel.
@@ -37,6 +37,7 @@ class ExitStatusValidator implements OperationEventListener {
 	 * @param channel
 	 */
 	void channelClosed(Channel channel) {
+		// FIXME
 		if (channel.exitStatus > 0) {
 			throw new IllegalStateException("Channel #${channel.id} returned exit status ${channel.exitStatus}")
 		}

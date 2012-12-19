@@ -1,6 +1,6 @@
 package org.hidetake.gradle.ssh.api
 
-import com.jcraft.jsch.Channel
+import net.schmizz.sshj.connection.channel.Channel
 
 /**
  * Event listener for a operation closure.

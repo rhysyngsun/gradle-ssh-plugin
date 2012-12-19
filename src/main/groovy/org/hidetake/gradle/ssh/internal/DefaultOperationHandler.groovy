@@ -1,13 +1,13 @@
 package org.hidetake.gradle.ssh.internal
 
+import net.schmizz.sshj.connection.channel.direct.Session
+
 import org.hidetake.gradle.ssh.api.OperationEventListener
 import org.hidetake.gradle.ssh.api.OperationHandler
 import org.hidetake.gradle.ssh.api.Remote
 import org.hidetake.gradle.ssh.api.SessionSpec
 
-import com.jcraft.jsch.ChannelExec
 import com.jcraft.jsch.ChannelSftp
-import com.jcraft.jsch.Session
 
 /**
  * Default implementation of {@link OperationHandler}.
@@ -48,22 +48,10 @@ class DefaultOperationHandler implements OperationHandler {
 	@Override
 	void execute(Map options, String command) {
 		listeners*.beginOperation('execute', options, command)
-		ChannelExec channel = session.openChannel('exec')
-		channel.command = command
-		channel.inputStream = null
-		channel.setOutputStream(System.out, true)
-		channel.setErrStream(System.err, true)
-		options.each { k, v -> channel[k] = v }
-		try {
-			channel.connect()
-			listeners*.managedChannelConnected(channel, spec)
-			while (!channel.closed) {
-				Thread.sleep(500L)
-			}
-			listeners*.managedChannelClosed(channel, spec)
-		} finally {
-			channel.disconnect()
-		}
+		def sshCommand = session.exec(command)
+		listeners*.managedChannelConnected(sshCommand, spec)
+		sshCommand.join()
+		listeners*.managedChannelClosed(sshCommand, spec)
 	}
 
 	@Override
@@ -73,15 +61,7 @@ class DefaultOperationHandler implements OperationHandler {
 
 	@Override
 	void executeBackground(Map options, String command) {
-		listeners*.beginOperation('executeBackground', command)
-		ChannelExec channel = session.openChannel('exec')
-		channel.command = command
-		channel.inputStream = null
-		channel.setOutputStream(System.out, true)
-		channel.setErrStream(System.err, true)
-		options.each { k, v -> channel[k] = v }
-		channel.connect()
-		listeners*.unmanagedChannelConnected(channel, spec)
+		throw new IllegalStateException('not implemented yet')
 	}
 
 	@Override
@@ -91,6 +71,7 @@ class DefaultOperationHandler implements OperationHandler {
 
 	@Override
 	void get(Map options, String remote, String local) {
+		// FIXME
 		listeners*.beginOperation('get', remote, local)
 		ChannelSftp channel = session.openChannel('sftp')
 		options.each { k, v -> channel[k] = v }
@@ -111,6 +92,7 @@ class DefaultOperationHandler implements OperationHandler {
 
 	@Override
 	void put(Map options, String local, String remote) {
+		// FIXME
 		listeners*.beginOperation('put', remote, local)
 		ChannelSftp channel = session.openChannel('sftp')
 		options.each { k, v -> channel[k] = v }
