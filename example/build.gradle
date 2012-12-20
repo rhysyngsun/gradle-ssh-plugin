@@ -47,55 +47,80 @@ remotes {
 	}
 }
 
-task showEnvironmentSingle(type: SshTask) {
-	description 'execute command on a remote'
-	session(remotes.localhost) {
-		execute "echo ${remote.user}@${remote.host}:${remote.port}"
-		execute 'env'
-	}
-}
-
-task showEnvironmentAll(type: SshTask) {
-	description 'execute command on remotes'
-	session(remotes.role('webServers')) {
-		execute 'env'
-	}
-}
-
-task concurrentExecution(type: SshTask) {
-	description 'describes how to execute SSH concurrently'
-	session(remotes.localhost) {
-		(1..5).each { i ->
-			executeBackground "sleep ${i} && echo -n ${i}- && date"
+task executeSingle {
+	description 'describes executing commands on a host'
+	doLast {
+		ssh(remotes.localhost) {
+			execute "echo ${remote.user}@${remote.host}:${remote.port}"
+			execute 'env'
 		}
 	}
-	session(remotes.myhost) {
-		executeBackground 'sar 1 5'
+}
+
+task executeOnSeveral {
+	description 'describes executing on several hosts'
+	doLast {
+		ssh(remotes.role('webServers')) {
+			execute 'env'
+		}
 	}
 }
 
-task executeSudo(type: SshTask) {
-	description 'execute command on a remote'
-	session(remotes.localhost) {
-		execute('sudo env', pty: true)
+task executeParallel {
+	description 'describes executing commands concurrently on a host'
+	doLast {
+		parallelssh(remotes.localhost) {
+			(1..5).each { i ->
+				execute "sleep ${i} && echo -n ${i}- && date"
+			}
+		}
 	}
 }
 
-task executionFailed(type: SshTask) {
+task executeParallelOnSeveral {
+	description 'describes executing commands concurrently on several hosts'
+	doLast {
+		parallelssh {
+			host(remotes.localhost) {
+				(1..5).each { i ->
+					execute "sleep ${i} && echo -n ${i}- && date"
+				}
+			}
+			host(remotes.myhost) {
+				execute 'sar 1 5'
+			}
+		}
+	}
+}
+
+task executeSudo {
+	description 'describes sudo execution'
+	doLast {
+		ssh(remotes.localhost) {
+			execute('sudo env') {
+				allocateDefaultPTY()
+			}
+		}
+	}
+}
+
+task executeAndStatus {
+	description 'describes error handling (task may be failed)'
+	doLast {
+		ssh(remotes.localhost) {
+			execute 'touch /root/test'
+		}
+	}
+}
+
+task executeAndHandleStatus {
 	description 'describes error handling'
-	session(remotes.localhost) {
-		// may be failed
-		execute 'touch /root/test'
-	}
-}
-
-task sshInTask << {
-	description 'describes how to execute SSH in the task'
-	def command = "env"
-	println command
-	sshexec {
-		session(remotes.localhost) {
-			execute command
+	doLast {
+		def status = ssh(remotes.localhost) {
+			execute 'touch /root/test'
+		}
+		if (status > 0) {
+			logger.error "remote command returned error ${status}"
 		}
 	}
 }
