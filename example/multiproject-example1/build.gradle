@@ -1,13 +1,13 @@
 apply plugin: 'project-report'
 apply plugin: 'ssh'
 
-showHosts(project)
+showRemotes(project)
 
-hosts {
+remotes {
 	additionalServer1 {
 		host = 'localhost'
 		user = 'someone'
 	}
 }
 
-showHosts(project)
+showRemotes(project)

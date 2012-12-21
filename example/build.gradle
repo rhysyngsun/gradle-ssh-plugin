@@ -32,7 +32,7 @@ ssh {
 	config(StrictHostKeyChecking: 'no')
 }
 
-hosts {
+remotes {
 	localhost {
 		role 'webServers'
 		host = 'localhost'
@@ -50,7 +50,7 @@ hosts {
 task executeSingle {
 	description 'describes executing commands on a host'
 	doLast {
-		ssh(hosts.localhost) {
+		ssh(remotes.localhost) {
 			execute "echo ${remote.user}@${remote.host}:${remote.port}"
 			execute 'env'
 		}
@@ -60,7 +60,7 @@ task executeSingle {
 task executeOnSeveral {
 	description 'describes executing on several hosts'
 	doLast {
-		ssh(hosts.role('webServers')) {
+		ssh(remotes.role('webServers')) {
 			execute 'env'
 		}
 	}
@@ -69,7 +69,7 @@ task executeOnSeveral {
 task executeParallel {
 	description 'describes executing commands concurrently on a host'
 	doLast {
-		parallelssh(hosts.localhost) {
+		parallelssh(remotes.localhost) {
 			(1..5).each { i ->
 				execute "sleep ${i} && echo -n ${i}- && date"
 			}
@@ -81,12 +81,12 @@ task executeParallelOnSeveral {
 	description 'describes executing commands concurrently on several hosts'
 	doLast {
 		parallelssh {
-			host(hosts.localhost) {
+			host(remotes.localhost) {
 				(1..5).each { i ->
 					execute "sleep ${i} && echo -n ${i}- && date"
 				}
 			}
-			host(hosts.myhost) {
+			host(remotes.myhost) {
 				execute 'sar 1 5'
 			}
 		}
@@ -96,7 +96,7 @@ task executeParallelOnSeveral {
 task executeSudo {
 	description 'describes sudo execution'
 	doLast {
-		ssh(hosts.localhost) {
+		ssh(remotes.localhost) {
 			execute('sudo env') {
 				allocateDefaultPTY()
 			}
@@ -107,7 +107,7 @@ task executeSudo {
 task executeAndStatus {
 	description 'describes error handling (task may be failed)'
 	doLast {
-		ssh(hosts.localhost) {
+		ssh(remotes.localhost) {
 			execute 'touch /root/test'
 		}
 	}
@@ -116,7 +116,7 @@ task executeAndStatus {
 task executeAndHandleStatus {
 	description 'describes error handling'
 	doLast {
-		def status = ssh(hosts.localhost) {
+		def status = ssh(remotes.localhost) {
 			execute 'touch /root/test'
 		}
 		if (status > 0) {
@@ -125,7 +125,7 @@ task executeAndHandleStatus {
 	}
 }
 
-void showHosts(Project baseProject) {
-	logger.info('({}) rootProject.hosts = {}', baseProject, baseProject.parent.hosts)
-	logger.info('({}) project.hosts = {}', baseProject, baseProject.hosts)
+void showRemotes(Project baseProject) {
+	logger.info('({}) rootProject.remotes = {}', baseProject, baseProject.parent.remotes)
+	logger.info('({}) project.remotes = {}', baseProject, baseProject.remotes)
 }
